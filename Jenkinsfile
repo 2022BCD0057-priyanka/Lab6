@@ -8,12 +8,14 @@ pipeline {
 
     stages {
 
+        // Stage 1: Checkout
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
+        // Stage 2: Setup Python Virtual Environment
         stage('Setup Python Virtual Environment') {
             steps {
                 sh '''
@@ -24,6 +26,7 @@ pipeline {
             }
         }
 
+        // Stage 3: Train Model
         stage('Train Model') {
             steps {
                 sh '''
@@ -33,27 +36,34 @@ pipeline {
             }
         }
 
+        // Stage 4: Read Accuracy
         stage('Read Accuracy') {
             steps {
                 script {
-                    def metrics = readJSON file: 'output/metrics.json'
-                    env.CURRENT_ACCURACY = metrics.R2_Score.toString()
+                    def text = readFile('app/artifacts/metrics.json')
+                    def json = new groovy.json.JsonSlurper().parseText(text)
+                    env.CURRENT_ACCURACY = json.R2_Score.toString()
+                    echo "Current Accuracy: ${env.CURRENT_ACCURACY}"
                 }
             }
         }
 
+        // Stage 5: Compare Accuracy
         stage('Compare Accuracy') {
             steps {
                 script {
                     if (env.CURRENT_ACCURACY.toFloat() > env.BEST_ACCURACY.toFloat()) {
                         env.BUILD_IMAGE = "true"
+                        echo "New model is better."
                     } else {
                         env.BUILD_IMAGE = "false"
+                        echo "Model did not improve."
                     }
                 }
             }
         }
 
+        // Stage 6: Build Docker Image (Conditional)
         stage('Build Docker Image') {
             when {
                 expression { env.BUILD_IMAGE == "true" }
@@ -61,7 +71,21 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('', 'dockerhub-creds') {
-                        def image = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+
+        // Stage 7: Push Docker Image (Conditional)
+        stage('Push Docker Image') {
+            when {
+                expression { env.BUILD_IMAGE == "true" }
+            }
+            steps {
+                script {
+                    docker.withRegistry('', 'dockerhub-creds') {
+                        def image = docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}")
                         image.push()
                         image.push("latest")
                     }
@@ -70,9 +94,10 @@ pipeline {
         }
     }
 
+    // Task 5: Archive artifacts
     post {
         always {
-            archiveArtifacts artifacts: 'output/**', fingerprint: true
+            archiveArtifacts artifacts: 'app/artifacts/**', fingerprint: true
         }
     }
 }
