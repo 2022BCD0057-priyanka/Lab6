@@ -10,16 +10,18 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 
 # --------------------------------------------------
-# 1. Create output directory
-# --------------------------------------------------
-os.makedirs("output", exist_ok=True)
-
-# --------------------------------------------------
-# 2. Load dataset (ROBUST PATH)
+# 1. Define base paths
 # --------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(BASE_DIR, "data", "winequality-red.csv")
+ARTIFACT_DIR = os.path.join(BASE_DIR, "app", "artifacts")
 
+# Create artifact directory
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
+
+# --------------------------------------------------
+# 2. Load dataset
+# --------------------------------------------------
 data = pd.read_csv(DATA_PATH, sep=";")
 
 # --------------------------------------------------
@@ -44,7 +46,7 @@ pipeline = Pipeline([
 ])
 
 # --------------------------------------------------
-# 6. Hyperparameter tuning (IMPROVES R2)
+# 6. Hyperparameter tuning
 # --------------------------------------------------
 param_grid = {
     "lasso__alpha": [0.001, 0.01, 0.05, 0.1, 0.5]
@@ -61,7 +63,6 @@ grid = GridSearchCV(
 # 7. Train model
 # --------------------------------------------------
 grid.fit(X_train, y_train)
-
 best_model = grid.best_estimator_
 
 # --------------------------------------------------
@@ -82,7 +83,7 @@ print("R2 Score:", r2)
 # --------------------------------------------------
 # 10. Save model
 # --------------------------------------------------
-joblib.dump(best_model, "output/model.pkl")
+joblib.dump(best_model, os.path.join(ARTIFACT_DIR, "model.pkl"))
 
 # --------------------------------------------------
 # 11. Save metrics
@@ -93,5 +94,7 @@ metrics = {
     "Best_Alpha": grid.best_params_["lasso__alpha"]
 }
 
-with open("output/metrics.json", "w") as f:
+with open(os.path.join(ARTIFACT_DIR, "metrics.json"), "w") as f:
     json.dump(metrics, f, indent=4)
+
+print("Artifacts saved to:", ARTIFACT_DIR)
