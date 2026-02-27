@@ -6,202 +6,88 @@
 ## Project Overview
 
 This project implements a complete MLOps pipeline for predicting wine quality using machine learning. It includes model training, evaluation, and deployment using FastAPI and Docker containerization.
+# Wine Quality — MLOps Lab
 
-## Project Structure
+Small ML project that trains a Lasso regression model on the red wine quality dataset and exposes a prediction API with FastAPI.
 
-```
-MLOps_Lab4/
-├── Dockerfile                    # Docker configuration for containerization
-├── requirements.txt              # Python dependencies
-├── app/
-│   └── app.py                   # FastAPI application for predictions
-├── data/
-│   └── winequality-red.csv      # Red wine quality dataset
-├── output/
-│   ├── model.pkl                # Trained machine learning model
-│   └── metrics.json             # Model performance metrics
-├── script/
-│   └── train.py                 # Model training script
-└── README.md                    # This file
-```
+**Author:** Priyanka Kumari — Roll No: 2022BCD0057
 
-## Dataset
+## Repository layout
 
-**Source:** `data/winequality-red.csv`  
-**Format:** CSV with semicolon delimiter  
-**Target Variable:** `quality` (wine quality rating)
+- `Dockerfile` — container image definition
+- `Jenkinsfile`, `Dockerfile.jenkins` — CI pipeline examples
+- `requirements.txt` — Python dependencies
+- `app/` — FastAPI app and runtime artifacts
+   - `app/app.py` — prediction endpoint (loads model from `app/artifacts/model.pkl`)
+   - `app/artifacts/` — model and metrics produced by training
+- `data/winequality-red.csv` — dataset (semicolon-delimited CSV)
+- `script/train.py` — training + hyperparameter search, saves artifacts to `app/artifacts`
+- `output/` — (optional) other generated outputs
 
-### Features:
-- fixed acidity
-- volatile acidity
-- citric acid
-- residual sugar
-- chlorides
-- free sulfur dioxide
-- total sulfur dioxide
-- density
-- pH
-- sulphates
-- alcohol
+## Quickstart (local)
 
-## Model Details
+1. Create and activate a virtual environment, then install dependencies:
 
-### Algorithm
-**Lasso Regression** with alpha=0.05
-
-### Training Process
-1. **Data Loading:** Reads wine quality dataset from CSV
-2. **Feature Scaling:** StandardScaler normalization
-3. **Train-Test Split:** 70% training, 30% testing (random_state=42)
-4. **Model Training:** Lasso regression with L1 regularization
-5. **Evaluation:** MSE and R² Score metrics
-
-### Model Artifacts
-- **Model File:** `output/model.pkl` (serialized with joblib)
-- **Metrics:** `output/metrics.json` (JSON format with MSE and R² Score)
-
-## API Endpoints
-
-### POST `/predict`
-
-Predicts wine quality based on physicochemical properties.
-
-**Parameters:**
-- `fixed_acidity` (float): Fixed acidity level
-- `volatile_acidity` (float): Volatile acidity level
-- `citric_acid` (float): Citric acid content
-- `residual_sugar` (float): Residual sugar content
-- `chlorides` (float): Chloride concentration
-- `free_sulfur_dioxide` (float): Free sulfur dioxide
-- `total_sulfur_dioxide` (float): Total sulfur dioxide
-- `density` (float): Wine density
-- `pH` (float): pH level
-- `sulphates` (float): Sulphate concentration
-- `alcohol` (float): Alcohol content percentage
-
-**Response:**
-```json
-{
-  "Name": "Priyanka Kumari",
-  "Roll_no": "2022BCD0057",
-  "wine_quality": 5
-}
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
-## Setup & Installation
+2. Train the model (writes `model.pkl` and `metrics.json` to `app/artifacts`):
 
-### Prerequisites
-- Python 3.12+
-- Docker (optional, for containerization)
-
-### Local Setup
-
-1. **Clone/Download the project**
-   ```bash
-   cd MLOps_Lab4
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Train the model**
-   ```bash
-   python script/train.py
-   ```
-
-4. **Run the API**
-   ```bash
-   uvicorn app.app:app --host 0.0.0.0 --port 8000
-   ```
-
-### Docker Setup
-
-1. **Build the Docker image**
-   ```bash
-   docker build -t mlops-lab4 .
-   ```
-
-2. **Run the container**
-   ```bash
-   docker run -p 8000:8000 mlops-lab4
-   ```
-
-## Dependencies
-
-The project uses the following Python packages:
-- **pandas:** Data manipulation and analysis
-- **scikit-learn:** Machine learning (Lasso, StandardScaler, metrics, train_test_split)
-- **joblib:** Model serialization and deserialization
-- **fastapi:** REST API framework
-- **uvicorn:** ASGI server for FastAPI
-
-## Usage
-
-### Training the Model
-
-```bash
+```powershell
 python script/train.py
 ```
 
-This will:
-- Load the wine quality dataset
-- Scale features using StandardScaler
-- Train a Lasso model
-- Evaluate using MSE and R² Score
-- Save the model to `output/model.pkl`
-- Save metrics to `output/metrics.json`
+3. Run the API (serves POST `/predict`):
 
-### Making Predictions via API
+```powershell
+uvicorn app.app:app --host 0.0.0.0 --port 8000
+```
 
-Once the API is running, you can make requests:
+4. Example request:
 
 ```bash
 curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fixed_acidity": 7.4,
-    "volatile_acidity": 0.7,
-    "citric_acid": 0.0,
-    "residual_sugar": 1.9,
-    "chlorides": 0.076,
-    "free_sulfur_dioxide": 11.0,
-    "total_sulfur_dioxide": 34.0,
-    "density": 0.9978,
-    "pH": 3.51,
-    "sulphates": 0.56,
-    "alcohol": 9.4
-  }'
+   -H "Content-Type: application/json" \
+   -d '{
+      "fixed_acidity": 7.4,
+      "volatile_acidity": 0.7,
+      "citric_acid": 0.0,
+      "residual_sugar": 1.9,
+      "chlorides": 0.076,
+      "free_sulfur_dioxide": 11.0,
+      "total_sulfur_dioxide": 34.0,
+      "density": 0.9978,
+      "pH": 3.51,
+      "sulphates": 0.56,
+      "alcohol": 9.4
+   }'
 ```
-
-## Model Performance
-
-Metrics are saved in `output/metrics.json` after training:
-- **MSE (Mean Squared Error):** Measures average prediction error
-- **R² Score:** Indicates model fit quality (0-1, higher is better)
-
-## Docker Configuration
-
-The Dockerfile:
-- Uses Python 3.12-slim base image
-- Installs dependencies from requirements.txt
-- Copies application code and pre-trained model artifacts
-- Exposes port 8000
-- Runs uvicorn server with FastAPI
 
 ## Notes
 
-- Ensure `artifacts/model.pkl` exists before running the API (generated by training script)
-- The model expects 11 feature inputs in the correct order
-- All features are standardized during model training and should be scaled appropriately for predictions
+- The training script saves artifacts to `app/artifacts` (model and metrics). The API expects `app/artifacts/model.pkl` to exist.
+- `script/train.py` uses a `StandardScaler` + `Lasso` pipeline and performs a small grid search over `alpha`.
+- Data is read from `data/winequality-red.csv` (semicolon-separated).
 
-## Future Enhancements
+## Docker
 
-- Add data validation and error handling in API
-- Implement model versioning
-- Add authentication to API endpoints
-- Create CI/CD pipeline
-- Add more sophisticated model evaluation techniques
-- Implement model retraining triggers
+Build and run the container (optional):
+
+```bash
+docker build -t wine-quality-app .
+docker run -p 8000:8000 wine-quality-app
+```
+
+## CI / Notes
+
+- A `Jenkinsfile` and `Dockerfile.jenkins` are included as examples for CI/CD integration.
+- Consider adding input validation, logging, and model versioning for production use.
+
+---
+
+Updated README to reflect current layout and how to run training and the API.
+### Prerequisites
 
