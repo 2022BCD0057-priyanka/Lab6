@@ -41,7 +41,7 @@ pipeline {
                 script {
 
                     def httpStatus = sh(
-                        script: """curl -s -o response.json -w "%{http_code}" -X POST "http://localhost:${PORT}/predict?fixed_acidity=7.4&volatile_acidity=0.7&citric_acid=0.0&residual_sugar=1.9&chlorides=0.076&free_sulfur_dioxide=11&total_sulfur_dioxide=34&density=0.9978&pH=3.51&sulphates=0.56&alcohol=9.4" """,
+                        script: """curl -s -o response.json -w "%{http_code}" -X POST "http://host.docker.internal:${PORT}/predict?fixed_acidity=7.4&volatile_acidity=0.7&citric_acid=0.0&residual_sugar=1.9&chlorides=0.076&free_sulfur_dioxide=11&total_sulfur_dioxide=34&density=0.9978&pH=3.51&sulphates=0.56&alcohol=9.4" """,
                         returnStdout: true
                     ).trim()
 
@@ -66,7 +66,7 @@ pipeline {
                 script {
 
                     def invalidStatus = sh(
-                        script: """curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:${PORT}/predict?fixed_acidity=7.4" """,
+                        script: """curl -s -o /dev/null -w "%{http_code}" -X POST "http://host.docker.internal:${PORT}/predict?fixed_acidity=7.4" """,
                         returnStdout: true
                     ).trim()
 
