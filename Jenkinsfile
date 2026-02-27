@@ -55,7 +55,7 @@ pipeline {
                     }
 
                     if (!response.contains("wine_quality")) {
-                        error("Prediction field 'wine_quality' missing!")
+                        error("Prediction field missing!")
                     }
                 }
             }
@@ -70,16 +70,16 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    echo "Invalid Request Status Code: ${invalidStatus}"
+                    echo "Invalid Status Code: ${invalidStatus}"
 
                     if (invalidStatus == "200") {
-                        error("Invalid input should NOT return 200!")
+                        error("Invalid request should not return 200!")
                     }
                 }
             }
         }
 
-        stage('Stop and Remove Container') {
+        stage('Stop Container') {
             steps {
                 sh "docker stop ${CONTAINER} || true"
                 sh "docker rm ${CONTAINER} || true"
@@ -89,10 +89,10 @@ pipeline {
 
     post {
         success {
-            echo "🎉 PIPELINE PASSED: Model validation successful!"
+            echo "🎉 PIPELINE PASSED"
         }
         failure {
-            echo "❌ PIPELINE FAILED: Validation error detected!"
+            echo "❌ PIPELINE FAILED"
         }
         always {
             sh "docker rm -f ${CONTAINER} || true"
