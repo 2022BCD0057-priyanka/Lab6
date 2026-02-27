@@ -30,7 +30,7 @@ pipeline {
         stage('Wait for API Readiness') {
             steps {
                 script {
-                    echo "Waiting for API to start..."
+                    echo "Waiting for API..."
                     sleep 15
                 }
             }
@@ -39,12 +39,20 @@ pipeline {
         stage('Send Valid Inference Request') {
             steps {
                 script {
-                    def response = sh(
-                        script: """curl -s -X POST "http://localhost:${PORT}/predict?fixed_acidity=7.4&volatile_acidity=0.7&citric_acid=0.0&residual_sugar=1.9&chlorides=0.076&free_sulfur_dioxide=11&total_sulfur_dioxide=34&density=0.9978&pH=3.51&sulphates=0.56&alcohol=9.4" """,
+
+                    def httpStatus = sh(
+                        script: """curl -s -o response.json -w "%{http_code}" -X POST "http://localhost:${PORT}/predict?fixed_acidity=7.4&volatile_acidity=0.7&citric_acid=0.0&residual_sugar=1.9&chlorides=0.076&free_sulfur_dioxide=11&total_sulfur_dioxide=34&density=0.9978&pH=3.51&sulphates=0.56&alcohol=9.4" """,
                         returnStdout: true
                     ).trim()
 
+                    def response = readFile('response.json')
+
+                    echo "HTTP Status: ${httpStatus}"
                     echo "Valid API Response: ${response}"
+
+                    if (httpStatus != "200") {
+                        error("Valid request failed! HTTP Status: ${httpStatus}")
+                    }
 
                     if (!response.contains("wine_quality")) {
                         error("Prediction field 'wine_quality' missing!")
@@ -56,15 +64,16 @@ pipeline {
         stage('Send Invalid Request') {
             steps {
                 script {
-                    def status = sh(
+
+                    def invalidStatus = sh(
                         script: """curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:${PORT}/predict?fixed_acidity=7.4" """,
                         returnStdout: true
                     ).trim()
 
-                    echo "Invalid Request Status Code: ${status}"
+                    echo "Invalid Request Status Code: ${invalidStatus}"
 
-                    if (status == "200") {
-                        error("Invalid input should not return 200!")
+                    if (invalidStatus == "200") {
+                        error("Invalid input should NOT return 200!")
                     }
                 }
             }
